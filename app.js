@@ -154,6 +154,7 @@ function simulateUpload() {
 }
 
 // 4. TAMPILAN DOSEN
+// 4. TAMPILAN DOSEN (DIPERBARUI)
 function renderDosenView() {
     return `
         <div class="stats-grid">
@@ -162,7 +163,10 @@ function renderDosenView() {
             <div class="card" style="grid-column: span 2"><canvas id="riskChart" height="150"></canvas></div>
         </div>
         <div class="card">
-            <h3>Daftar Mahasiswa Bimbingan [cite: 65]</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3>Daftar Mahasiswa Bimbingan</h3>
+                <span style="font-size: 0.8rem; color: #64748b;">Algoritma Aktif: <b>SVM</b></span>
+            </div>
             <table>
                 <thead><tr><th>Nama</th><th>IPK</th><th>Status AI</th><th>Aksi</th></tr></thead>
                 <tbody>
@@ -170,13 +174,96 @@ function renderDosenView() {
                         <tr>
                             <td>${s.nama}</td><td>${s.ipk}</td>
                             <td><span class="badge ${s.status === 'Aman' ? 'bg-safe' : s.status === 'Waspada' ? 'bg-warning' : 'bg-danger'}">${s.status}</span></td>
-                            <td><button class="btn btn-outline" onclick="alert('Membuka detail Insight AI...')">Detail</button></td>
+                            <td><button class="btn btn-outline" onclick="viewAIDetail('${s.id}')">
+                                <i data-lucide="brain-circuit" style="width:14px; vertical-align:middle;"></i> Detail AI
+                            </button></td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         </div>
     `;
+}
+
+// 5. FUNGSI BARU: VISUALISASI OUTPUT AI (DETAIL INSIGHT)
+function viewAIDetail(id) {
+    const s = studentsData.find(x => x.id === id);
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        <nav>
+            <button class="btn btn-outline" onclick="renderDashboard()">← Kembali ke Daftar</button>
+            <h2 style="font-size: 1.1rem;">AI Decision Support: ${s.nama}</h2>
+        </nav>
+        <div class="content">
+            <div class="stats-grid">
+                <div class="card" style="grid-column: span 2;">
+                    <h3>Visualisasi Output AI (Radar Chart)</h3>
+                    <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 1rem;">Perbandingan fitur mahasiswa terhadap rata-rata lulus tepat waktu.</p>
+                    <div style="height: 300px;"><canvas id="aiRadarChart"></canvas></div>
+                </div>
+
+                <div class="card">
+                    <h3>Hasil Prediksi AI</h3>
+                    <div style="text-align: center; padding: 1.5rem 0;">
+                        <div style="font-size: 0.8rem; color: #64748b;">Probabilitas ${s.status}</div>
+                        <div style="font-size: 2.5rem; font-weight: 800; color: ${s.status === 'Aman' ? 'var(--success)' : 'var(--danger)'}">${s.score}</div>
+                        <p>Status: <b>${s.status.toUpperCase()}</b></p>
+                    </div>
+                    <div class="ai-insight" style="background: #f8fafc; border-left-color: var(--primary);">
+                        <small><b>Faktor Dominan (SVM Weight):</b></small>
+                        <ul style="font-size: 0.8rem; margin-top: 5px; padding-left: 15px;">
+                            <li>Kehadiran Kumulatif (-0.45)</li>
+                            <li>SKS Lulus Semester 1-4 (-0.38)</li>
+                            <li>IPK Terakhir (+0.12)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Rekomendasi Intervensi Dosen</h3>
+                <p style="margin: 10px 0; color: #475569;">Berdasarkan pola data, mahasiswa ini memerlukan:</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <span class="badge bg-warning">Konseling Akademik</span>
+                    <span class="badge bg-danger">Evaluasi SKS Terlambat</span>
+                    <span class="badge bg-safe">Pendampingan Peer-Review</span>
+                </div>
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
+                <button class="btn btn-primary" onclick="alert('Rencana Intervensi Terkirim ke Mahasiswa!')">Kirim Feedback ke Mahasiswa</button>
+            </div>
+        </div>
+    `;
+
+    // Inisialisasi Radar Chart untuk Detail AI
+    const ctx = document.getElementById('aiRadarChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Kehadiran', 'IPK', 'SKS Lulus', 'Keaktifan', 'Lama Studi'],
+            datasets: [{
+                label: s.nama,
+                data: s.status === 'Aman' ? [90, 85, 95, 70, 90] : [40, 50, 45, 30, 40],
+                fill: true,
+                backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                borderColor: 'var(--primary)',
+                pointBackgroundColor: 'var(--primary)',
+            }, {
+                label: 'Rata-rata Lulus Tepat Waktu',
+                data: [85, 80, 85, 75, 80],
+                fill: true,
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderColor: 'var(--success)',
+                pointBackgroundColor: 'var(--success)',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { r: { suggestMin: 0, suggestMax: 100 } }
+        }
+    });
+    lucide.createIcons();
 }
 
 // 5. TAMPILAN MAHASISWA
@@ -216,4 +303,5 @@ function initCharts() {
 }
 
 // Jalankan aplikasi
+
 init();
